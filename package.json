@@ -2,6 +2,7 @@
   "name": "ciberabogados-frontend",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://corvattaia.github.io/Ciberabogados", // <-- AÑADIR ESTA LÍNEA
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
@@ -16,6 +17,7 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
+    // Añadiremos scripts de deploy aquí en el siguiente paso
   },
   "eslintConfig": {
     "extends": [
@@ -36,6 +38,7 @@
     ]
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.3" // Asegúrate de configurar Tailwind
+    "tailwindcss": "^3.4.3"
+    // Añadiremos gh-pages aquí en el siguiente paso
   }
 }
