@@ -1,0 +1,168 @@
+import React, { useState } from 'react';
+
+// Import Components & Views
+import Navbar from './components/layout/Navbar';
+import Footer from './components/layout/Footer';
+import MessageBox from './components/ui/MessageBox';
+import ChatModal from './components/ui/ChatModal';
+import IntroView from './views/IntroView';
+import AreaLawQuiz from './views/AreaLawQuiz';
+import ServiceSelectionView from './views/ServiceSelectionView';
+import RegistrationView from './views/RegistrationView';
+import AgentHandoverView from './views/AgentHandoverView';
+
+// Import Config (Optional here, but good practice)
+// import { AGENT_CONFIG } from './config/AgentConfig'; // AGENT_CONFIG is used within specific views now
+
+// --- Main App Component (Manages the overall application state and view routing) ---
+function App() {
+  // Recommendation (Rec. 4): For larger apps, consider Context API or Zustand/Redux
+  // for managing state like viewState, quizResult, selectedService.
+  // --- State Definitions ---
+  // For displaying temporary messages
+  const [message, setMessage] = useState('');
+  const [messageType, setMessageType] = useState('info');
+  // For the general LexIA chat modal
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [initialChatMessage, setInitialChatMessage] = useState('');
+  // For controlling the main application flow/view
+  const [viewState, setViewState] = useState('intro'); // 'intro', 'quiz', 'serviceSelection', 'registration', 'agentHandover'
+  // For storing results from the diagnostic quiz
+  const [quizResult, setQuizResult] = useState({ completed: false, area: null, answers: {} });
+  // For storing the service selected after the quiz
+  const [selectedService, setSelectedService] = useState(null);
+  // Note: Removed isAuthenticated state as login is removed.
+
+  // --- Helper Functions ---
+  // Shows a temporary message using the MessageBox component
+  const showMessage = (msg, type = 'info', duration = 4000) => {
+       setMessage(msg);
+       setMessageType(type);
+       // Automatically clear the message after the duration
+       setTimeout(() => { setMessage(''); }, duration);
+   };
+  // Clears the message box manually
+  const clearMessage = () => { setMessage(''); };
+  // Opens the chat modal, optionally with an initial message
+  const openChat = (initialQuery = '') => {
+       setInitialChatMessage(initialQuery);
+       setIsChatOpen(true);
+   };
+  // Closes the chat modal
+  const closeChat = () => {
+       setIsChatOpen(false);
+       setInitialChatMessage(''); // Clear initial message on close
+  };
+
+  // --- Navigation Function ---
+  // Changes the main view displayed by the application
+  const navigateTo = (view) => {
+      console.log("Navigating to:", view); // For debugging
+      setViewState(view); // Update the current view
+      window.scrollTo(0, 0); // Scroll to top for new view
+
+      // Reset relevant states when navigating back to the start
+      if (view === 'intro') {
+          setQuizResult({ completed: false, area: null, answers: {} });
+          setSelectedService(null);
+      }
+      // Reset selected service if going back to the selection screen
+      if (view === 'serviceSelection') {
+           setSelectedService(null);
+      }
+  };
+
+   // --- Service Selection Handler ---
+   // Called when a user clicks a service card in ServiceSelectionView
+   const handleServiceSelection = (service) => {
+       setSelectedService(service); // Store the selected service object
+       navigateTo('registration'); // Proceed to the (simulated) registration step
+   };
+
+   // --- Registration Completion Handler ---
+   // Called after the simulated registration in RegistrationView succeeds
+   const handleProceedToAgent = () => {
+       // This function marks the end of the registration step
+       // and proceeds to the agent handover simulation.
+       navigateTo('agentHandover');
+   };
+
+
+  // --- Main Render Logic ---
+  // Determines which component tree to render based on the current viewState
+  const renderMainContent = () => {
+    console.log("Current viewState:", viewState); // For debugging
+    switch (viewState) {
+        case 'quiz':
+            // Render the AreaLawQuiz, passing necessary props
+            return <AreaLawQuiz
+                        navigateTo={navigateTo}
+                        showMessage={showMessage}
+                        setQuizResult={setQuizResult}
+                    />;
+        case 'serviceSelection':
+            // Ensure quiz was completed before showing service selection
+            if (!quizResult.completed) {
+                navigateTo('quiz'); // Redirect back if quiz not done
+                return null; // Render nothing while redirecting
+            }
+            // Render the ServiceSelectionView
+            return <ServiceSelectionView
+                        navigateTo={navigateTo}
+                        identifiedArea={quizResult.area}
+                        handleServiceSelection={handleServiceSelection}
+                    />;
+        case 'registration':
+             // Ensure a service was selected before showing registration
+             if (!selectedService) {
+                 navigateTo('serviceSelection'); // Redirect back if no service selected
+                 return null;
+             }
+             // Render the RegistrationView
+            return <RegistrationView
+                        navigateTo={navigateTo}
+                        showMessage={showMessage}
+                        selectedService={selectedService}
+                        handleRegistrationComplete={handleProceedToAgent} // Pass the correct handler
+                    />;
+        case 'agentHandover':
+             // Ensure a service was selected before showing handover
+             if (!selectedService) {
+                  navigateTo('serviceSelection'); // Redirect back if state is inconsistent
+                  return null;
+             }
+             // Render the AgentHandoverView
+            return <AgentHandoverView
+                        navigateTo={navigateTo}
+                        selectedService={selectedService}
+                        quizAnswers={quizResult.answers} // Pass quiz answers for potential use
+                    />;
+        case 'intro':
+        default:
+             // Render the initial IntroView, passing navigation and chat functions
+            return <IntroView navigateTo={navigateTo} openChat={openChat} />;
+    }
+  };
+
+  // --- App Structure ---
+  return (
+    // Main application container div
+    <div className="font-sans antialiased text-gray-900 bg-gray-50">
+       {/* Global Message Box for temporary notifications */}
+       <MessageBox message={message} type={messageType} clearMessage={clearMessage} />
+       {/* Top Navigation Bar */}
+       <Navbar showMessage={showMessage} navigateTo={navigateTo} />
+       {/* Main Content Area (dynamically rendered based on viewState) */}
+       <main className="pb-16">
+         {renderMainContent()}
+       </main>
+       {/* Footer */}
+       <Footer />
+       {/* Global Chat Modal (for LexIA assistant) */}
+       {/* Recommendation: Telegram integration requires backend changes */}
+       <ChatModal isOpen={isChatOpen} closeChat={closeChat} initialMessage={initialChatMessage} />
+    </div>
+  );
+}
+
+export default App; // Export the main App component
